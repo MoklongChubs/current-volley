@@ -26,6 +26,7 @@
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="insert.php">Insert Teams</a></li>
                             <li><a class="dropdown-item" href="standing.php">Insert Matches</a></li>
+                            <li><a class="dropdown-item" href="Delete.php">Delete Teams</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">

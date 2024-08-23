@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -26,6 +27,7 @@
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="insert.php">Insert Teams</a></li>
                             <li><a class="dropdown-item" href="standing.php">Insert Matches</a></li>
+                            <li><a class="dropdown-item" href="Delete.php">Delete Teams</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
@@ -77,11 +79,11 @@
                 </select>
             </div>
             <div class="mb-3">
-                <label for="home_team_score" class="form-label">Home Team Score:</label>
+                <label for="home_team_score" class="form-label">Home Sets Won:</label>
                 <input type="number" id="home_team_score" name="home_team_score" class="form-control" >
             </div>
             <div class="mb-3">
-                <label for="away_team_score" class="form-label">Away Team Score:</label>
+                <label for="away_team_score" class="form-label">Away Sets Won:</label>
                 <input type="number" id="away_team_score" name="away_team_score" class="form-control" >
             </div>
             <h3>Set Scores</h3>

@@ -1,9 +1,9 @@
 <?php
 // Check for form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    include_once('connect.inc'); // Ensure this includes the correct database connection setup
+    include_once('connect.inc'); 
 
-    $errors = array(); // Initialize an error array
+    $errors = array(); 
 
     // Validate team ID
     if (empty($_POST['team_id'])) {
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $new_venue_name = mysqli_real_escape_string($conn, trim($_POST['new_venue_name']));
     }
 
-    if (empty($errors)) { // If no errors, proceed with the update
+    if (empty($errors)) { 
         // Check if the provided team ID and team name match
         $q = "SELECT team_id, venue_id FROM Teams WHERE team_id = ? AND team_name = ?";
         $stmt = $conn->prepare($q);
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt->execute();
         $stmt->store_result();
 
-        if ($stmt->num_rows == 1) { // Match was made
+        if ($stmt->num_rows == 1) { 
             $stmt->bind_result($team_id, $current_venue_id);
             $stmt->fetch();
 
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $updateStmt = $conn->prepare($q);
             $updateStmt->bind_param("ssii", $new_team_name, $new_home_city, $new_venue_id, $team_id);
 
-            if ($updateStmt->execute()) { // If it ran OK
+            if ($updateStmt->execute()) { 
                 echo '<h1>Success</h1>
                 <p>Your team details have been updated successfully.</p>';
             } else {
@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-    mysqli_close($conn); // Close the database connection
+    mysqli_close($conn); 
 }
 ?>
 
@@ -136,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="insert.php">Insert Teams</a></li>
                             <li><a class="dropdown-item" href="standing.php">Insert Matches</a></li>
+                            <li><a class="dropdown-item" href="Delete.php">Delete Teams</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
@@ -182,7 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </form>
     </div>
 
-    <!-- Optional JavaScript; choose one of the two! -->
+   
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

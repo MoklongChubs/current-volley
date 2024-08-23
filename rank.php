@@ -26,6 +26,7 @@
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="insert.php">Insert Teams</a></li>
                             <li><a class="dropdown-item" href="standing.php">Insert Matches</a></li>
+                            <li><a class="dropdown-item" href="Delete.php">Delete Teams</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
@@ -38,7 +39,8 @@
                         </ul>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="rank.php">Rankings</a></li>
+                        <a class="nav-link" href="rank.php">Rankings</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -97,13 +99,138 @@
             } else {
                 echo '<tr><td colspan="3" class="text-center">No data available</td></tr>';
             }
+            
+            // Get and display matches 
+            $result->free(); 
+            
+            // Query to get match details
+            $query = "
+                SELECT 
+                    Matches.match_date, 
+                    ht.team_name AS home_team_name, 
+                    at.team_name AS away_team_name, 
+                    Matches.home_team_score, 
+                    Matches.away_team_score,
+                    Matches.set_1_home_score, Matches.set_1_away_score,
+                    Matches.set_2_home_score, Matches.set_2_away_score,
+                    Matches.set_3_home_score, Matches.set_3_away_score
+                FROM Matches
+                JOIN Teams ht ON Matches.home_team_id = ht.team_id
+                JOIN Teams at ON Matches.away_team_id = at.team_id
+                ORDER BY Matches.match_date DESC";
 
-            $conn->close();
+            $result = $conn->query($query);
             ?>
             </tbody>
         </table>
     </div>
-    
+
+    <div class="container my-5">
+        <h2>Matches</h2>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Match Date</th>
+                        <th>Home Team</th>
+                        <th>Away Team</th>
+                        <th>Home Score</th>
+                        <th>Away Score</th>
+                        <th>Set 1 (Home-Away)</th>
+                        <th>Set 2 (Home-Away)</th>
+                        <th>Set 3 (Home-Away)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    if ($result) {
+                        if ($result->num_rows > 0) {
+                            while ($row = $result->fetch_assoc()) {
+                                echo "<tr>
+                                    <td>{$row['match_date']}</td>
+                                    <td>{$row['home_team_name']}</td>
+                                    <td>{$row['away_team_name']}</td>
+                                    <td>{$row['home_team_score']}</td>
+                                    <td>{$row['away_team_score']}</td>
+                                    <td>{$row['set_1_home_score']} - {$row['set_1_away_score']}</td>
+                                    <td>{$row['set_2_home_score']} - {$row['set_2_away_score']}</td>
+                                    <td>{$row['set_3_home_score']} - {$row['set_3_away_score']}</td>
+                                </tr>";
+                            }
+                        } else {
+                            echo '<tr><td colspan="8" class="text-center">No matches found.</td></tr>';
+                        }
+                    } else {
+                        echo '<tr><td colspan="8" class="text-center">Query failed: ' . htmlspecialchars($conn->error) . '</td></tr>';
+                    }
+
+                    $result->free(); // Free the result
+                    ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Top Teams Table -->
+    <div class="container my-5">
+        <h2>Finals</h2>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th scope="col">Match</th>
+                    <th scope="col">Team 1</th>
+                    <th scope="col">Team 2</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                // Query to get top teams (assuming we want the top 2)
+                $query = "SELECT 
+                            team_name
+                        FROM (
+                            SELECT 
+                                team_name,
+                                SUM(CASE 
+                                        WHEN home_team_id = team_id AND home_team_score > away_team_score THEN 1 
+                                        WHEN away_team_id = team_id AND away_team_score > home_team_score THEN 1 
+                                        ELSE 0 
+                                    END) AS wins
+                            FROM 
+                                Teams
+                            LEFT JOIN 
+                                Matches ON Teams.team_id = Matches.home_team_id OR Teams.team_id = Matches.away_team_id
+                            GROUP BY 
+                                team_id, team_name
+                            ORDER BY 
+                                wins DESC
+                            LIMIT 2
+                        ) AS top_teams";
+
+                $result = $conn->query($query);
+                if ($result) {
+                    if ($result->num_rows == 2) {
+                        $teams = [];
+                        while ($row = $result->fetch_assoc()) {
+                            $teams[] = $row['team_name'];
+                        }
+                        echo "<tr>
+                            <td>Final</td>
+                            <td>{$teams[0]}</td>
+                            <td>{$teams[1]}</td>
+                        </tr>";
+                    } else {
+                        echo '<tr><td colspan="3" class="text-center">Not enough teams to determine finalists.</td></tr>';
+                    }
+                } else {
+                    echo '<tr><td colspan="3" class="text-center">Query failed: ' . htmlspecialchars($conn->error) . '</td></tr>';
+                }
+
+                $conn->close(); // Close the connection
+                ?>
+            </tbody>
+        </table>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

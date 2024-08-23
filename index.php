@@ -26,13 +26,14 @@
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="insert.php">Insert Teams</a></li>
                             <li><a class="dropdown-item" href="standing.php">Insert Matches</a></li>
+                            <li><a class="dropdown-item" href="Delete.php">Delete Teams</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Update Status
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown2">
                             <li><a class="dropdown-item" href="update.php">Update Teams</a></li>
                             <li><a class="dropdown-item" href="match.php">Update Matches</a></li>
                         </ul>
@@ -41,7 +42,7 @@
                         <a class="nav-link" href="rank.php">Rankings</a>
                     </li>
                 </ul>
-                <form class="d-flex flex-grow-1 ms-2 me-2" method="POST" action="index.php">
+                <form class="d-flex flex-grow-1 ms-2 me-2" method="GET" action="index.php">
                     <input class="form-control me-2 flex-grow-1" type="search" name="search" placeholder="Search Team Name" aria-label="Search">
                     <button class="btn btn-outline-light" type="submit" name="submit">Search</button>
                 </form>
@@ -73,66 +74,54 @@
     </div>
 
     <div class="container my-5">
-        <h2>Matches</h2>
-        <div class="table-responsive">
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Match Date</th>
-                        <th>Home Team</th>
-                        <th>Away Team</th>
-                        <th>Home Score</th>
-                        <th>Away Score</th>
-                        <th>Set 1 (Home-Away)</th>
-                        <th>Set 2 (Home-Away)</th>
-                        <th>Set 3 (Home-Away)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    include_once('connect.inc');
+        <div class="row">
+            <?php
+            include_once('connect.inc');
 
-                    // Fetch matches
-                    $query = "
-                        SELECT 
-                            Matches.match_date, 
-                            ht.team_name AS home_team_name, 
-                            at.team_name AS away_team_name, 
-                            Matches.home_team_score, 
-                            Matches.away_team_score,
-                            Matches.set_1_home_score, Matches.set_1_away_score,
-                            Matches.set_2_home_score, Matches.set_2_away_score,
-                            Matches.set_3_home_score, Matches.set_3_away_score
-                        FROM Matches
-                        JOIN Teams ht ON Matches.home_team_id = ht.team_id
-                        JOIN Teams at ON Matches.away_team_id = at.team_id
-                        ORDER BY Matches.match_date DESC";
-                    
-                    if ($result = $conn->query($query)) {
-                        if ($result->num_rows > 0) {
-                            while ($row = $result->fetch_assoc()) {
-                                echo "<tr>
-                                    <td>{$row['match_date']}</td>
-                                    <td>{$row['home_team_name']}</td>
-                                    <td>{$row['away_team_name']}</td>
-                                    <td>{$row['home_team_score']}</td>
-                                    <td>{$row['away_team_score']}</td>
-                                    <td>{$row['set_1_home_score']} - {$row['set_1_away_score']}</td>
-                                    <td>{$row['set_2_home_score']} - {$row['set_2_away_score']}</td>
-                                    <td>{$row['set_3_home_score']} - {$row['set_3_away_score']}</td>
-                                </tr>";
-                            }
-                        } else {
-                            echo '<tr><td colspan="8" class="text-center">No matches found.</td></tr>';
-                        }
-                    } else {
-                        echo '<tr><td colspan="8" class="text-center">Query failed: ' . htmlspecialchars($conn->error) . '</td></tr>';
+            // Initialize $data_result
+            $data_result = array();
+
+            // Check if a search query is set
+            $search_query = isset($_GET['search']) ? $_GET['search'] : '';
+
+            // Base query
+            $query = "SELECT * FROM teams";
+
+            // Add a search filter if there's a search query
+            if (!empty($search_query)) {
+                $search_query = $conn->real_escape_string($search_query); // Escape special characters for security
+                $query .= " WHERE team_name LIKE '%$search_query%' OR home_city LIKE '%$search_query%'";
+            }
+
+            $result = $conn->query($query);
+
+            if ($result) {
+                // Fetch all results into $data_result
+                while ($row = $result->fetch_assoc()) {
+                    $data_result[] = $row;
+                }
+
+                // Check if there are results to display
+                if (!empty($data_result)) {
+                    foreach ($data_result as $row) {
+                        echo '<div class="col-md-4 mb-4">';
+                        echo '<div class="card team-container h-100">';
+                        echo '<div class="card-body">';
+                        echo '<h5 class="card-title team-header">Team Number: ' . $row['team_id'] . '</h5>';
+                        echo '<p class="card-text team-details">Team Name: ' . $row['team_name'] . '</p>';
+                        echo '<p class="card-text team-details">Home: ' . $row['home_city'] . '</p>';
+                        // echo '<p class="card-text team-details">Venue: ' . $row['venue_name'] . '</p>';
+                        echo '</div>';
+                        echo '</div>';
+                        echo '</div>';
                     }
-
-                    $conn->close();
-                    ?>
-                </tbody>
-            </table>
+                } else {
+                    echo '<div class="col-12"><div class="alert alert-warning">No teams found.</div></div>';
+                }
+            } else {
+                echo '<div class="col-12"><div class="alert alert-danger">Query failed: ' . $conn->error . '</div></div>';
+            }
+            ?>
         </div>
     </div>
 
