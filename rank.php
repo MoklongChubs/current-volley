@@ -10,7 +10,7 @@ if ($conn->connect_error) {
 }
 
 // SQL query to get all teams and their total number of wins across different stages using joins
-$query = "
+$teamsQuery = "
     SELECT 
         t.team_id,
         t.team_name,
@@ -32,7 +32,26 @@ $query = "
 ";
 
 // Execute the query and store the result
-$result = $conn->query($query);
+$teamsResult = $conn->query($teamsQuery);
+
+// Query to get upcoming and ongoing games
+$gamesQuery = "
+    SELECT 'Match' AS stage, match_date, home_team_id, away_team_id, home_team_score, away_team_score
+    FROM Matches
+    WHERE match_date >= CURDATE()
+    UNION
+    SELECT 'QuarterFinal' AS stage, match_date, home_team_id, away_team_id, home_team_score, away_team_score
+    FROM QuarterFinals
+    WHERE match_date >= CURDATE()
+    UNION
+    SELECT 'Final' AS stage, match_date, home_team_id, away_team_id, home_team_score, away_team_score
+    FROM Finals
+    WHERE match_date >= CURDATE()
+    ORDER BY match_date
+";
+
+// Execute the query and store the result
+$gamesResult = $conn->query($gamesQuery);
 ?>
 
 <!doctype html>
@@ -40,58 +59,15 @@ $result = $conn->query($query);
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Link to CSS and Bootstrap CSS -->
-    <link rel="stylesheet" href="style.css">
+    <!-- Bootstrap CSS for aesthetics -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- stylesheets -->
+    <link rel="stylesheet" href="style.css">
     <title>Team Rankings</title>
 </head>
 <body>
-    <!-- Navigation bar -->
-    <nav class="navbar navbar-expand-xl navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand">Team Rankings</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarDark" aria-controls="navbarDark" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse show" id="navbarDark">
-                <ul class="navbar-nav me-auto mb-2 mb-xl-0 fs-5 ms-auto p-2 text-center">
-                    <!-- Navigation links -->
-                    <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="index.php">Home</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Manage Teams
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="insert.php">Insert Teams</a></li>
-                            <li><a class="dropdown-item" href="standing.php">Insert Matches</a></li>
-                            <li><a class="dropdown-item" href="Delete.php">Delete Teams</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Update Status
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="update.php">Update Teams</a></li>
-                            <li><a class="dropdown-item" href="match.php">Update Matches</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Team Rankings
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="rank.php">Team Rankings</a></li>
-                            <li><a class="dropdown-item" href="quarter.php">Quarter Final Games</a></li>
-                            <li><a class="dropdown-item" href="final.php">Finals Games</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <!-- Includes -->
+    <?php include 'includes/nav_search.php'; ?>
 
     <div class="container mt-4">
         <h2>Team Rankings</h2>
@@ -106,9 +82,9 @@ $result = $conn->query($query);
             <tbody>
             <?php
             // Display the result of the query in a table
-            if ($result) {
+            if ($teamsResult) {
                 $rank = 1;
-                while ($row = $result->fetch_assoc()) {
+                while ($row = $teamsResult->fetch_assoc()) {
                     echo '<tr>';
                     echo '<th scope="row">' . $rank++ . '</th>';
                     echo '<td>' . htmlspecialchars($row['team_name']) . '</td>';
@@ -118,9 +94,47 @@ $result = $conn->query($query);
             } else {
                 echo '<tr><td colspan="3" class="text-center">No data available</td></tr>';
             }
+            ?>
+            </tbody>
+        </table>
 
-            // Close the connection
-            $conn->close();
+        <h2 class="mt-5">Upcoming and Ongoing Games</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">Stage</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Home Team</th>
+                    <th scope="col">Away Team</th>
+                    <th scope="col">Home Score</th>
+                    <th scope="col">Away Score</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php
+            // Display the result of the query in a table
+            if ($gamesResult) {
+                while ($row = $gamesResult->fetch_assoc()) {
+                    echo '<tr>';
+                    echo '<td>' . htmlspecialchars($row['stage']) . '</td>';
+                    echo '<td>' . htmlspecialchars($row['match_date']) . '</td>';
+                    
+                    // Fetch team names
+                    $homeTeamResult = $conn->query("SELECT team_name FROM Teams WHERE team_id = " . $row['home_team_id']);
+                    $homeTeam = $homeTeamResult->fetch_assoc()['team_name'];
+                    
+                    $awayTeamResult = $conn->query("SELECT team_name FROM Teams WHERE team_id = " . $row['away_team_id']);
+                    $awayTeam = $awayTeamResult->fetch_assoc()['team_name'];
+                    
+                    echo '<td>' . htmlspecialchars($homeTeam) . '</td>';
+                    echo '<td>' . htmlspecialchars($awayTeam) . '</td>';
+                    echo '<td>' . htmlspecialchars($row['home_team_score']) . '</td>';
+                    echo '<td>' . htmlspecialchars($row['away_team_score']) . '</td>';
+                    echo '</tr>';
+                }
+            } else {
+                echo '<tr><td colspan="6" class="text-center">No upcoming or ongoing games</td></tr>';
+            }
             ?>
             </tbody>
         </table>
@@ -128,3 +142,8 @@ $result = $conn->query($query);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
+<?php
+// Close the connection
+$conn->close();
+?>
